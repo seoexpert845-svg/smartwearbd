@@ -53,23 +53,24 @@ async function compressBannerImage(file: File): Promise<File> {
     let height = Math.max(1, Math.round(bitmap.height * scale));
     const canvas = document.createElement('canvas');
 
-    for (let attempt = 0; attempt < 4; attempt += 1) {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
       canvas.width = width;
       canvas.height = height;
       const context = canvas.getContext('2d');
       if (!context) throw new Error('ব্যানার ছবি প্রস্তুত করা যায়নি।');
       context.drawImage(bitmap, 0, 0, width, height);
       const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((result) => result ? resolve(result) : reject(new Error('ব্যানার ছবি কমপ্রেস করা যায়নি।')), 'image/webp', 0.82 - attempt * 0.08);
+        canvas.toBlob((result) => result ? resolve(result) : reject(new Error('ব্যানার ছবি কমপ্রেস করা যায়নি।')), 'image/webp', Math.max(0.4, 0.8 - attempt * 0.06));
       });
-      if (blob.size <= 1_500_000) {
+      if (blob.size <= 900_000) {
         const name = file.name.replace(/\.[^.]+$/, '') || 'banner';
-        return new File([blob], `${name}.webp`, { type: 'image/webp', lastModified: Date.now() });
+        const extension = blob.type === 'image/webp' ? '.webp' : '.jpg';
+        return new File([blob], `${name}${extension}`, { type: blob.type, lastModified: Date.now() });
       }
-      width = Math.max(1, Math.round(width * 0.8));
-      height = Math.max(1, Math.round(height * 0.8));
+      width = Math.max(1, Math.round(width * 0.85));
+      height = Math.max(1, Math.round(height * 0.85));
     }
-    throw new Error('কমপ্রেস করার পরও ব্যানারটি ১.৫ MB-এর বেশি। ছোট ছবি ব্যবহার করুন।');
+    throw new Error('কমপ্রেস করার পরও ব্যানারটি ৯০০ KB-এর বেশি। ছোট ছবি ব্যবহার করুন।');
   } finally {
     bitmap.close();
   }
@@ -261,8 +262,8 @@ export default function AdminSettingsModule() {
         banners.push({ imageUrl, link: banner.link?.trim() || '' });
       }
       const [logoUrl, faviconUrl] = await Promise.all([
-        logoFile ? uploadAdminImage(logoFile) : Promise.resolve(settingsPayload.logoUrl),
-        faviconFile ? uploadAdminImage(faviconFile) : Promise.resolve(settingsPayload.faviconUrl),
+        logoFile ? uploadAdminImage(logoFile, true) : Promise.resolve(settingsPayload.logoUrl),
+        faviconFile ? uploadAdminImage(faviconFile, true) : Promise.resolve(settingsPayload.faviconUrl),
       ]);
       const response = await fetch('/api/admin/settings', {
         method: 'PATCH',
