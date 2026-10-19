@@ -431,11 +431,6 @@ html {
 }
 
 @media (max-width: 639px) {
-  .store-product-grid {
-    column-gap: 10px;
-    row-gap: 14px;
-  }
-
   .product-card {
     border-radius: 10px;
   }
@@ -499,22 +494,6 @@ html {
 
 .store-popular-section {
   border-color: var(--store-line);
-}
-
-.store-popular-track {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding: 2px 1px 14px;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: thin;
-  scrollbar-color: #c7b795 transparent;
-}
-
-.store-popular-item {
-  width: min(72vw, 280px);
-  flex: 0 0 auto;
-  scroll-snap-align: start;
 }
 
 .store-empty-state {
@@ -736,33 +715,6 @@ html {
   .store-category-name {
     margin-top: 12px;
     font-size: 12px;
-  }
-  .store-popular-track {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
-    overflow: visible;
-  }
-  .store-popular-item {
-    width: auto;
-  }
-}
-
-@media (min-width: 1024px) {
-  .store-popular-track {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1280px) {
-  .store-popular-track {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  .store-popular-track {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
