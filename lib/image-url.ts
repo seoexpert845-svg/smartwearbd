@@ -1,7 +1,7 @@
 export function normalizeImageUrl(value: string) {
   const source = value.trim();
   if (!source) return '';
-  if (/^\/uploads\/[a-zA-Z0-9-]+\.(?:jpg|png|webp|gif)$/i.test(source)) return source;
+  if (/^\/uploads\/[a-zA-Z0-9-]+\.(?:jpg|png|webp|gif)$/i.test(source) || /^\/api\/uploads\/[a-f0-9]{24}$/i.test(source)) return source;
   if (/^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/i.test(source)) return source;
 
   const linkStart = source.indexOf('](');

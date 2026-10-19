@@ -34,7 +34,7 @@ const defaults = {
   pixelSettings: { facebookPixelId: '', facebookAccessToken: '', tiktokPixelId: '', tiktokAccessToken: '', googleAnalyticsId: '', googleTagManagerId: '' },
 };
 
-const urlFieldPattern = /^(?:https?:\/\/|\/uploads\/)/i;
+const urlFieldPattern = /^(?:https?:\/\/|\/uploads\/|\/api\/uploads\/[a-f0-9]{24}$)/i;
 const allowedTopLevel = new Set(Object.keys(defaults));
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -6,6 +6,7 @@ import { normalizeImageUrl } from '@/lib/image-url';
 import { requireAdmin } from '@/lib/auth-api';
 
 type ProductRouteContext = { params: Promise<{ id: string }> | { id: string } };
+const uploadedImagePattern = /^(?:\/uploads\/[a-zA-Z0-9-]+\.(?:jpg|png|webp|gif)|\/api\/uploads\/[a-f0-9]{24})$/i;
 
 export async function GET(request: Request, context: ProductRouteContext) {
   try {
@@ -54,7 +55,7 @@ export async function PATCH(request: Request, context: ProductRouteContext) {
       if (body[field] !== undefined) updates[field] = body[field];
     }
     if (body.images !== undefined) {
-      if (!Array.isArray(body.images) || body.images.length < 1 || body.images.length > 10 || body.images.some((image: unknown) => typeof image !== 'string' || !/^\/uploads\/[a-zA-Z0-9-]+\.(?:jpg|png|webp|gif)$/.test(image))) {
+      if (!Array.isArray(body.images) || body.images.length < 1 || body.images.length > 10 || body.images.some((image: unknown) => typeof image !== 'string' || !uploadedImagePattern.test(image))) {
         return NextResponse.json({ success: false, error: '১ থেকে ১০টি বৈধ আপলোড করা ছবি দিন।' }, { status: 400 });
       }
       updates.images = body.images;

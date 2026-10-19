@@ -103,14 +103,14 @@ The script upserts the admin record and replaces the plaintext seed password in 
 4. Deploy. The configured `build` script is `next build`; Vercel runs the Next.js server and API routes, so do not use static export.
 5. Connect the custom domain and verify the deployment, admin login, MongoDB-backed pages, and API routes.
 
-**Important: uploaded files are not deployment-safe on Vercel as currently implemented.** Logo, banner, and other uploaded files are written under `public/uploads`, but Vercel's function filesystem is ephemeral and may be read-only/non-shared. Before using Vercel for real uploads, migrate the upload/read URL flow to persistent object storage (for example, S3-compatible storage) or disable runtime uploads. A successful deployment alone does not make those files durable.
+Uploaded images are stored as MongoDB image assets and served from `/api/uploads/{id}`; API functions do not create or write local upload directories. Each image is limited to 4 MB, and the admin product form uploads multiple images individually to stay within serverless request limits. This uses MongoDB storage and bandwidth, so consider object storage/CDN for a high-volume catalog. Existing `/uploads/...` links refer to legacy local files and those files must be re-uploaded if they were not included in the deployment.
 
 ### Render or Node.js-capable cPanel hosting
 
 1. Create a Node.js web service/application with the repository as its source. Choose Node.js 22.x or newer than 20.9.
 2. Install from the lockfile with `npm ci`, build with `npm run build`, and start with `npm run start`. Configure the host's start command as `npm start` (or `npm run start`) and bind through the port supplied by the platform; Next.js handles the platform `PORT`.
 3. Add the same production environment variables through the host dashboard. Never rely on a developer machine's `.env.local` in the running service.
-4. Attach a persistent disk for `public/uploads` if the host supports a mount at that directory, and verify a newly uploaded file survives a service restart and redeploy. Otherwise, migrate uploads to persistent object storage before enabling them.
+4. Verify that an uploaded image remains available after a service restart and redeploy; uploaded image bytes are stored in MongoDB.
 5. For cPanel, confirm the account provides a supported Node.js application runtime (not static/PHP-only hosting), install dependencies in the application root, build, configure the startup command, and restart the Node application after deployment.
 6. Run the admin seed once against the production database, then verify login, uploads, courier callbacks, and checkout from the live domain.
 

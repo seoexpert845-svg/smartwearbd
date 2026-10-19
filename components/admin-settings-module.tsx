@@ -44,6 +44,17 @@ const defaults: StoreSettings = {
 const fieldClass = 'mt-1.5 h-11 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm font-normal text-stone-900 outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10';
 const money = (amount: number) => `৳${new Intl.NumberFormat('en-US').format(amount)}`;
 
+async function uploadAdminImage(file: File) {
+  const formData = new FormData();
+  formData.append('settingsImage', file);
+  const response = await fetch('/api/uploads', { method: 'POST', body: formData });
+  const result = await response.json();
+  if (!response.ok || !result.success || !result.data?.[0]) {
+    throw new Error(result.error || 'ছবি আপলোড করা যায়নি।');
+  }
+  return result.data[0] as string;
+}
+
 function Notice({ kind, children }: { kind: 'error' | 'success'; children: React.ReactNode }) {
   return <motion.p initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} role={kind === 'error' ? 'alert' : 'status'} className={`mb-4 rounded-lg border p-3 text-sm font-medium ${kind === 'error' ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{children}</motion.p>;
 }
@@ -152,18 +163,18 @@ export default function AdminSettingsModule() {
     setError('');
     try {
       const nextSettings = { ...settings };
-    const { banners: currentBanners, ...settingsPayload } = nextSettings;
-    const banners = currentBanners.filter((banner) => banner.file || banner.imageUrl.trim());
-    const formData = new FormData();
-      formData.append('settings', JSON.stringify(settingsPayload));
-      formData.append('bannerCount', String(banners.length));
-      if (logoFile) formData.append('logoImage', logoFile);
-      banners.forEach((banner, index) => {
-        formData.append(`banners[${index}][image]`, banner.file || '');
-        formData.append(`banners[${index}][imageUrl]`, banner.imageUrl);
-        formData.append(`banners[${index}][url]`, banner.link?.trim() || '');
+      const { banners: currentBanners, ...settingsPayload } = nextSettings;
+      const banners = [];
+      for (const banner of currentBanners.filter((entry) => entry.file || entry.imageUrl.trim())) {
+        const imageUrl = banner.file ? await uploadAdminImage(banner.file) : banner.imageUrl;
+        banners.push({ imageUrl, link: banner.link?.trim() || '' });
+      }
+      const logoUrl = logoFile ? await uploadAdminImage(logoFile) : settingsPayload.logoUrl;
+      const response = await fetch('/api/admin/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...settingsPayload, logoUrl, banners }),
       });
-      const response = await fetch('/api/admin/settings', { method: 'PATCH', body: formData });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error || 'ওয়েব সেটিংস সেভ করা যায়নি।');
       setSettings({ ...settings, ...result.data, banners: result.data.banners.map((banner: Banner) => ({ ...banner, persisted: true })) });
@@ -237,7 +248,7 @@ export default function AdminSettingsModule() {
     {loading ? <div className="rounded-2xl border border-stone-200 bg-white p-8 text-sm text-stone-600">সেটিংস লোড হচ্ছে...</div> : <AnimatePresence mode="wait">
       <motion.div key={activeTab} initial={{ opacity: 0, y: 9 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.18 }}>
         {activeTab === '/admin/settings/web' &&         <form encType="multipart/form-data" onSubmit={saveWebSettings} className="space-y-5">
-          <Section title="General Info" description="স্টোরের নাম, পরিচিতি ও লোগো নির্ধারণ করুন।"><div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-semibold text-stone-800 sm:col-span-2">Site Name<input required maxLength={120} value={settings.storeName} onChange={(event) => updateSetting('storeName', event.target.value)} className={fieldClass} /></label><label className="block text-sm font-semibold text-stone-800">Site Slogan / Sub-Logo Text<input maxLength={240} value={settings.slogan} onChange={(event) => updateSetting('slogan', event.target.value)} className={fieldClass} /></label><label className="block text-sm font-semibold text-stone-800">Description<input maxLength={500} value={settings.description} onChange={(event) => updateSetting('description', event.target.value)} className={fieldClass} /></label><div className="flex flex-wrap items-center gap-4 sm:col-span-2"><label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-stone-300 px-4 text-sm font-bold text-stone-800 transition hover:border-teal-700"><ImagePlus className="size-4" />Upload logo<input type="file" name="logoImage" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => { const file = event.target.files?.[0]; if (file) setLogoFile(file); }} className="sr-only" /></label><p className="text-xs text-stone-600">JPG, PNG, WEBP বা GIF · সর্বোচ্চ ৫ MB</p>{(logoFile || settings.logoUrl) && <img src={logoFile ? URL.createObjectURL(logoFile) : settings.logoUrl} alt="Logo preview" className="size-16 rounded-xl border border-stone-200 bg-stone-50 object-contain p-2" />}</div></div></Section>
+          <Section title="General Info" description="স্টোরের নাম, পরিচিতি ও লোগো নির্ধারণ করুন।"><div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-semibold text-stone-800 sm:col-span-2">Site Name<input required maxLength={120} value={settings.storeName} onChange={(event) => updateSetting('storeName', event.target.value)} className={fieldClass} /></label><label className="block text-sm font-semibold text-stone-800">Site Slogan / Sub-Logo Text<input maxLength={240} value={settings.slogan} onChange={(event) => updateSetting('slogan', event.target.value)} className={fieldClass} /></label><label className="block text-sm font-semibold text-stone-800">Description<input maxLength={500} value={settings.description} onChange={(event) => updateSetting('description', event.target.value)} className={fieldClass} /></label><div className="flex flex-wrap items-center gap-4 sm:col-span-2"><label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-stone-300 px-4 text-sm font-bold text-stone-800 transition hover:border-teal-700"><ImagePlus className="size-4" />Upload logo<input type="file" name="logoImage" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => { const file = event.target.files?.[0]; if (file) setLogoFile(file); }} className="sr-only" /></label><p className="text-xs text-stone-600">JPG, PNG, WEBP বা GIF · সর্বোচ্চ ৪ MB</p>{(logoFile || settings.logoUrl) && <img src={logoFile ? URL.createObjectURL(logoFile) : settings.logoUrl} alt="Logo preview" className="size-16 rounded-xl border border-stone-200 bg-stone-50 object-contain p-2" />}</div></div></Section>
           <Section title="Banners Management" description="প্রতিটি ব্যানারের জন্য ছবি এবং আলাদা click-through URL দিন।">
             <div className="grid gap-4 md:grid-cols-2">{settings.banners.map((banner, index) => <motion.article layout key={`banner-${index}`} className="relative rounded-xl border border-stone-200 bg-stone-50 p-4"><button type="button" onClick={() => void removeBanner(index)} disabled={saving || deletingBannerIndex !== null} aria-label="Remove banner" className="absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-full bg-red-600 text-white shadow transition hover:scale-105 hover:bg-red-700 disabled:cursor-wait disabled:opacity-60"><X className="size-4" /></button><label className="flex min-h-36 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-stone-300 bg-white text-center text-sm font-semibold text-stone-700 transition hover:border-teal-600">{banner.file || banner.imageUrl ? <img src={banner.preview || banner.imageUrl} alt={`Banner ${index + 1}`} className="h-36 w-full object-cover" /> : <><ImagePlus className="mb-2 size-6 text-teal-700" />Banner Image {index + 1}</>}<input type="file" name={`banners[${index}][image]`} accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => { const file = event.target.files?.[0]; if (file) setBanner(index, { file, preview: URL.createObjectURL(file) }); }} className="sr-only" /></label><input type="hidden" name={`banners[${index}][imageUrl]`} value={banner.imageUrl} /><label className="mt-3 block text-xs font-bold text-stone-700">Dynamic Redirect Link<input type="text" maxLength={2048} name={`banners[${index}][url]`} placeholder="https://example.com/offer or #products" value={banner.link} onChange={(event) => setBanner(index, { link: event.target.value })} className={fieldClass} /></label></motion.article>)}<motion.button layout type="button" onClick={addBanner} disabled={settings.banners.length >= 20} className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-teal-300 bg-teal-50/40 text-sm font-bold text-teal-900 transition hover:border-teal-600 hover:bg-teal-50 disabled:opacity-50"><Plus className="size-6" />Add Banner</motion.button></div>
           </Section>

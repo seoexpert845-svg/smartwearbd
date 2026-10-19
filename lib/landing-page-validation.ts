@@ -1,7 +1,7 @@
 const sectionTypes = ['hero', 'features', 'gallery', 'feature-list', 'text'];
 const fonts = ['Hind Siliguri', 'SolaimanLipi', 'Kalpurush', 'Noto Sans Bengali'];
 const safeHref = (value: string) => !value || value.startsWith('/') && !value.startsWith('//') && !value.includes('\\') || /^https?:\/\//i.test(value) || value.startsWith('#');
-const validMedia = (value: string) => !value || /^\/uploads\/[a-zA-Z0-9-]+\.(?:jpg|png|webp|gif)$/i.test(value) || /^https?:\/\//i.test(value);
+const validMedia = (value: string) => !value || /^\/uploads\/[a-zA-Z0-9-]+\.(?:jpg|png|webp|gif)$/i.test(value) || /^\/api\/uploads\/[a-f0-9]{24}$/i.test(value) || /^https?:\/\//i.test(value);
 
 export function validatePage(body: Record<string, unknown>) {
   const sections = Array.isArray(body.sections) ? body.sections : [];

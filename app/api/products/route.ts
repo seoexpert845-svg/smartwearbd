@@ -4,6 +4,8 @@ import Product from '@/models/Product';
 import { requireAdmin } from '@/lib/auth-api';
 import Order from '@/models/Order';
 
+const uploadedImagePattern = /^(?:\/uploads\/[a-zA-Z0-9-]+\.(?:jpg|png|webp|gif)|\/api\/uploads\/[a-f0-9]{24})$/i;
+
 // ১. সব প্রোডাক্ট নিয়ে আসার জন্য (GET Method)
 export async function GET(request: Request) {
   try {
@@ -66,7 +68,7 @@ export async function POST(req: Request) {
     const stockAlertThreshold = Number(body.stockAlertThreshold ?? 5);
     const maxOrderQuantity = Number(body.maxOrderQuantity ?? 0);
     const sortingRank = Number(body.sortingRank ?? 0);
-    const images = Array.isArray(body.images) ? body.images.filter((value): value is string => typeof value === 'string' && /^\/uploads\/[a-zA-Z0-9-]+\.(?:jpg|png|webp|gif)$/.test(value)) : [];
+    const images = Array.isArray(body.images) ? body.images.filter((value): value is string => typeof value === 'string' && uploadedImagePattern.test(value)) : [];
     const variants = Array.isArray(body.variants) ? body.variants : [];
 
     const variantsValid = variants.every((variant) => {
