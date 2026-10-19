@@ -74,7 +74,10 @@ const ProductSchema = new Schema<IProduct>(
 );
 
 const cachedProductModel = models.Product;
-if (cachedProductModel && !cachedProductModel.schema.path('buyingPrice')) mongoose.deleteModel('Product');
+if (cachedProductModel && (
+  !cachedProductModel.schema.path('buyingPrice')
+  || cachedProductModel.schema.path('maxOrderQuantity')?.options.min !== 0
+)) mongoose.deleteModel('Product');
 const Product = models.Product || model<IProduct>('Product', ProductSchema);
 
 export default Product;

@@ -180,7 +180,7 @@ export default function AdminProductForm({ productId }: { productId?: string }) 
         body: JSON.stringify(payload),
       });
       const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error || 'প্রোডাক্ট সেভ করা যায়নি।');
+      if (!response.ok || !result.success) throw new Error(result.message || result.error || 'প্রোডাক্ট সেভ করা যায়নি।');
       if (productId) {
         setExistingImages(payload.images);
         setSuccess('প্রোডাক্ট সফলভাবে আপডেট হয়েছে।');
