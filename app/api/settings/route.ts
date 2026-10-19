@@ -57,9 +57,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const unauthorized = requireAdmin(request);
-  if (unauthorized) return unauthorized;
   try {
+    const unauthorized = requireAdmin(request);
+    if (unauthorized) return unauthorized;
     const body: unknown = await request.json();
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return NextResponse.json({ success: false, error: 'সেটিংসের তথ্য সঠিক নয়।' }, { status: 400 });

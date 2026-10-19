@@ -44,15 +44,78 @@ const defaults: StoreSettings = {
 const fieldClass = 'mt-1.5 h-11 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm font-normal text-stone-900 outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10';
 const money = (amount: number) => `৳${new Intl.NumberFormat('en-US').format(amount)}`;
 
-async function uploadAdminImage(file: File) {
-  const formData = new FormData();
-  formData.append('settingsImage', file);
-  const response = await fetch('/api/uploads', { method: 'POST', body: formData });
-  const result = await response.json();
-  if (!response.ok || !result.success || !result.data?.[0]) {
-    throw new Error(result.message || result.error || 'ছবি আপলোড করা যায়নি।');
+async function compressBannerImage(file: File): Promise<File> {
+  const bitmap = await createImageBitmap(file);
+  try {
+    const maxDimension = 1920;
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+    let width = Math.max(1, Math.round(bitmap.width * scale));
+    let height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement('canvas');
+
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('ব্যানার ছবি প্রস্তুত করা যায়নি।');
+      context.drawImage(bitmap, 0, 0, width, height);
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((result) => result ? resolve(result) : reject(new Error('ব্যানার ছবি কমপ্রেস করা যায়নি।')), 'image/webp', 0.82 - attempt * 0.08);
+      });
+      if (blob.size <= 1_500_000) {
+        const name = file.name.replace(/\.[^.]+$/, '') || 'banner';
+        return new File([blob], `${name}.webp`, { type: 'image/webp', lastModified: Date.now() });
+      }
+      width = Math.max(1, Math.round(width * 0.8));
+      height = Math.max(1, Math.round(height * 0.8));
+    }
+    throw new Error('কমপ্রেস করার পরও ব্যানারটি ১.৫ MB-এর বেশি। ছোট ছবি ব্যবহার করুন।');
+  } finally {
+    bitmap.close();
   }
-  return result.data[0] as string;
+}
+
+async function readApiJson(response: Response) {
+  try {
+    const result: unknown = await response.json();
+    if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('Invalid API response');
+    return result as Record<string, unknown>;
+  } catch {
+    throw new Error(response.status === 413
+      ? 'ছবির ফাইলটি সার্ভারের অনুমোদিত সীমার চেয়ে বড়। ছোট ছবি আপলোড করুন।'
+      : 'সার্ভার থেকে সঠিক JSON উত্তর পাওয়া যায়নি। আবার চেষ্টা করুন।');
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readStringRecord(value: unknown): Record<string, string> {
+  if (!isRecord(value)) return {};
+  return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string'));
+}
+
+function readPolicyPages(value: unknown): StoreSettings['policyPages'] {
+  if (!isRecord(value)) return {};
+  return Object.fromEntries(Object.entries(value).flatMap(([slug, page]) =>
+    isRecord(page) && typeof page.title === 'string' && typeof page.content === 'string'
+      ? [[slug, { title: page.title, content: page.content }]]
+      : []
+  ));
+}
+
+async function uploadAdminImage(file: File, compress = false) {
+  const uploadFile = compress ? await compressBannerImage(file) : file;
+  const formData = new FormData();
+  formData.append('settingsImage', uploadFile);
+  const response = await fetch('/api/uploads', { method: 'POST', body: formData });
+  const result = await readApiJson(response);
+  const data = result.data;
+  if (!response.ok || result.success !== true || !Array.isArray(data) || typeof data[0] !== 'string') {
+    throw new Error(typeof result.message === 'string' ? result.message : typeof result.error === 'string' ? result.error : 'ছবি আপলোড করা যায়নি।');
+  }
+  return data[0];
 }
 
 function Notice({ kind, children }: { kind: 'error' | 'success'; children: React.ReactNode }) {
@@ -92,19 +155,20 @@ export default function AdminSettingsModule() {
   useEffect(() => {
     let active = true;
     fetch('/api/admin/settings').then(async (response) => {
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error || 'সেটিংস লোড করা যায়নি।');
-      if (!result.data || typeof result.data !== 'object') throw new Error('সেটিংসের তথ্য পাওয়া যায়নি।');
+      const result = await readApiJson(response);
+      if (!response.ok || result.success !== true) throw new Error(typeof result.error === 'string' ? result.error : 'সেটিংস লোড করা যায়নি।');
+      const data = result.data;
+      if (!isRecord(data)) throw new Error('সেটিংসের তথ্য পাওয়া যায়নি।');
       if (active) setSettings({
         ...defaults,
-        ...result.data,
-        socialLinks: { ...defaults.socialLinks, ...(result.data.socialLinks || {}) },
-        orderSettings: { ...defaults.orderSettings, ...(result.data.orderSettings || {}) },
-        pixelSettings: { ...defaults.pixelSettings, ...(result.data.pixelSettings || {}) },
-        policyPages: result.data.policyPages && typeof result.data.policyPages === 'object' ? result.data.policyPages : {},
-        banners: Array.isArray(result.data.banners)
-          ? result.data.banners.filter((banner: unknown): banner is Banner => Boolean(banner) && typeof banner === 'object')
-            .map((banner: Banner) => ({ imageUrl: typeof banner.imageUrl === 'string' ? banner.imageUrl : '', link: typeof banner.link === 'string' ? banner.link : '', persisted: true }))
+        ...data,
+        socialLinks: { ...defaults.socialLinks, ...readStringRecord(data.socialLinks) },
+        orderSettings: { ...defaults.orderSettings, ...(isRecord(data.orderSettings) ? data.orderSettings : {}) },
+        pixelSettings: { ...defaults.pixelSettings, ...(isRecord(data.pixelSettings) ? data.pixelSettings : {}) },
+        policyPages: readPolicyPages(data.policyPages),
+        banners: Array.isArray(data.banners)
+          ? data.banners.filter(isRecord)
+            .map((banner) => ({ imageUrl: typeof banner.imageUrl === 'string' ? banner.imageUrl : '', link: typeof banner.link === 'string' ? banner.link : '', persisted: true }))
           : [],
       });
     }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'সেটিংস লোড করা যায়নি।'); })
@@ -127,9 +191,10 @@ export default function AdminSettingsModule() {
     if (activeTab !== '/admin/settings/coupons') return;
     let active = true;
     fetch('/api/coupons').then(async (response) => {
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error || 'কুপন লোড করা যায়নি।');
-      if (active) setCoupons(result.data);
+      const result = await readApiJson(response);
+      if (!response.ok || result.success !== true) throw new Error(typeof result.error === 'string' ? result.error : 'কুপন লোড করা যায়নি।');
+      if (!Array.isArray(result.data)) throw new Error('কুপনের তথ্য পাওয়া যায়নি।');
+      if (active) setCoupons(result.data as Coupon[]);
     }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'কুপন লোড করা যায়নি।'); });
     return () => { active = false; };
   }, [activeTab]);
@@ -143,9 +208,11 @@ export default function AdminSettingsModule() {
     setError('');
     try {
       const response = await fetch('/api/admin/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) });
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error || 'সেটিংস সেভ করা যায়নি।');
-      setSettings((current) => ({ ...current, ...result.data }));
+      const result = await readApiJson(response);
+      if (!response.ok || result.success !== true) throw new Error(typeof result.error === 'string' ? result.error : 'সেটিংস সেভ করা যায়নি।');
+      if (!isRecord(result.data)) throw new Error('সেটিংস সেভ হয়েছে, তবে সার্ভারের উত্তর সঠিক নয়।');
+      const savedData = result.data;
+      setSettings((current) => ({ ...current, ...savedData }));
       window.dispatchEvent(new Event('store-settings-updated'));
       showToast('Settings saved successfully');
     } catch (reason) {
@@ -169,8 +236,8 @@ export default function AdminSettingsModule() {
     setError('');
     try {
       const response = await fetch(`/api/admin/settings/banners?index=${index}`, { method: 'DELETE' });
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error || 'ব্যানার মুছতে ব্যর্থ হয়েছে।');
+      const result = await readApiJson(response);
+      if (!response.ok || result.success !== true) throw new Error(typeof result.error === 'string' ? result.error : 'ব্যানার মুছতে ব্যর্থ হয়েছে।');
       setSettings((current) => ({ ...current, banners: current.banners.filter((_, currentIndex) => currentIndex !== index) }));
       window.dispatchEvent(new Event('store-settings-updated'));
       showToast('Banner deleted');
@@ -190,7 +257,7 @@ export default function AdminSettingsModule() {
       const { banners: currentBanners, ...settingsPayload } = nextSettings;
       const banners = [];
       for (const banner of currentBanners.filter((entry) => entry.file || entry.imageUrl.trim())) {
-        const imageUrl = banner.file ? await uploadAdminImage(banner.file) : banner.imageUrl;
+        const imageUrl = banner.file ? await uploadAdminImage(banner.file, true) : banner.imageUrl;
         banners.push({ imageUrl, link: banner.link?.trim() || '' });
       }
       const [logoUrl, faviconUrl] = await Promise.all([
@@ -202,9 +269,16 @@ export default function AdminSettingsModule() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...settingsPayload, logoUrl, faviconUrl, banners }),
       });
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error || 'ওয়েব সেটিংস সেভ করা যায়নি।');
-      setSettings({ ...settings, ...result.data, banners: result.data.banners.map((banner: Banner) => ({ ...banner, persisted: true })) });
+      const result = await readApiJson(response);
+      if (!response.ok || result.success !== true || !result.data || typeof result.data !== 'object') {
+        throw new Error(typeof result.error === 'string' ? result.error : 'ওয়েব সেটিংস সেভ করা যায়নি।');
+      }
+      const savedSettings = result.data as Partial<StoreSettings>;
+      const savedBanners = Array.isArray(savedSettings.banners)
+        ? savedSettings.banners.filter((banner): banner is Banner => Boolean(banner) && typeof banner === 'object')
+          .map((banner) => ({ imageUrl: typeof banner.imageUrl === 'string' ? banner.imageUrl : '', link: typeof banner.link === 'string' ? banner.link : '', persisted: true }))
+        : [];
+      setSettings({ ...settings, ...savedSettings, banners: savedBanners });
       setLogoFile(null);
       setFaviconFile(null);
       window.dispatchEvent(new Event('store-settings-updated'));

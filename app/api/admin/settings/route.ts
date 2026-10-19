@@ -119,9 +119,9 @@ async function readSettingsPayload(request: Request): Promise<Record<string, unk
 }
 
 export async function GET(request: Request) {
-  const unauthorized = requireAdmin(request);
-  if (unauthorized) return unauthorized;
   try {
+    const unauthorized = requireAdmin(request);
+    if (unauthorized) return unauthorized;
     await connectDB();
     const current = await getStoreSettings();
     const data = { ...defaults, ...(current || {}) };
@@ -141,9 +141,9 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const unauthorized = requireAdmin(request);
-  if (unauthorized) return unauthorized;
   try {
+    const unauthorized = requireAdmin(request);
+    if (unauthorized) return unauthorized;
     let body: Record<string, unknown>;
     try {
       body = await readSettingsPayload(request);

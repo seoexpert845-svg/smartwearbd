@@ -5,16 +5,16 @@ import { getStoreSettings } from '@/lib/site-settings';
 import SiteSetting from '@/models/SiteSetting';
 
 export async function DELETE(request: Request) {
-  const unauthorized = requireAdmin(request);
-  if (unauthorized) return unauthorized;
-
-  const indexValue = new URL(request.url).searchParams.get('index');
-  if (!indexValue || !/^\d+$/.test(indexValue)) {
-    return NextResponse.json({ success: false, error: 'ব্যানার নির্বাচন সঠিক নয়।' }, { status: 400 });
-  }
-  const index = Number(indexValue);
-
   try {
+    const unauthorized = requireAdmin(request);
+    if (unauthorized) return unauthorized;
+
+    const indexValue = new URL(request.url).searchParams.get('index');
+    if (!indexValue || !/^\d+$/.test(indexValue)) {
+      return NextResponse.json({ success: false, error: 'ব্যানার নির্বাচন সঠিক নয়।' }, { status: 400 });
+    }
+    const index = Number(indexValue);
+
     await connectDB();
     const current = await getStoreSettings();
     if (!Array.isArray(current.banners) || index >= current.banners.length) {
