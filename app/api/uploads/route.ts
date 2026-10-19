@@ -5,7 +5,6 @@ import { ImageUploadValidationError, MAX_IMAGE_FILE_SIZE, storeImageFile, valida
 export const runtime = 'nodejs';
 
 const MAX_IMAGES = 10;
-const MIN_IMAGES = 4;
 const MAX_REQUEST_IMAGE_BYTES = 4 * 1024 * 1024;
 
 export async function POST(request: Request) {
@@ -17,7 +16,6 @@ export async function POST(request: Request) {
     const categoryImage = formData.get('categoryImage');
     const reviewImage = formData.get('reviewImage');
     const settingsImage = formData.get('settingsImage');
-    const productImageUpload = formData.get('productImages') === 'true';
     const singleImage = categoryImage instanceof File && categoryImage.size > 0
       ? categoryImage
       : reviewImage instanceof File && reviewImage.size > 0 ? reviewImage
@@ -26,8 +24,8 @@ export async function POST(request: Request) {
     const files = isSingleImage
       ? [singleImage]
       : formData.getAll('images').filter((entry): entry is File => entry instanceof File && entry.size > 0);
-    if (isSingleImage ? files.length !== 1 : files.length > MAX_IMAGES || (productImageUpload ? files.length < 1 : files.length < MIN_IMAGES)) {
-      return NextResponse.json({ success: false, error: isSingleImage ? 'একটি ছবি নির্বাচন করুন।' : 'একসাথে ৪ থেকে ১০টি ছবি নির্বাচন করুন।' }, { status: 400 });
+    if (isSingleImage ? files.length !== 1 : files.length < 1 || files.length > MAX_IMAGES) {
+      return NextResponse.json({ success: false, error: isSingleImage ? 'একটি ছবি নির্বাচন করুন।' : 'একসাথে ১ থেকে ১০টি ছবি নির্বাচন করুন।' }, { status: 400 });
     }
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
     if (files.some((file) => file.size > MAX_IMAGE_FILE_SIZE) || totalSize > MAX_REQUEST_IMAGE_BYTES) {

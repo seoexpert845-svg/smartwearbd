@@ -132,7 +132,7 @@ export default function AdminProductForm({ productId }: { productId?: string }) 
     setError('');
     setSuccess('');
     const imageCount = existingImages.length + images.length;
-    if (imageCount < (productId ? 1 : 4) || imageCount > 10) return setError(productId ? 'পণ্যের জন্য অন্তত ১টি ছবি রাখুন; সর্বোচ্চ ১০টি।' : 'পণ্যের জন্য ৪ থেকে ১০টি ছবি নির্বাচন করুন।');
+    if (imageCount < 1 || imageCount > 10) return setError('পণ্যের জন্য ১ থেকে ১০টি ছবি নির্বাচন করুন।');
     if (Number(formData.salePrice) > Number(formData.regularPrice)) return setError('বিক্রয় মূল্য মূল দামের বেশি হতে পারবে না।');
     let variants: unknown;
     try {
@@ -149,7 +149,6 @@ export default function AdminProductForm({ productId }: { productId?: string }) 
         for (const { file } of images) {
           const uploadForm = new FormData();
           uploadForm.append('images', file);
-          uploadForm.append('productImages', 'true');
           const uploadResponse = await fetch('/api/uploads', { method: 'POST', body: uploadForm });
           const uploadResult = await uploadResponse.json();
           if (!uploadResponse.ok || !uploadResult.success || !uploadResult.data?.[0]) {
@@ -230,7 +229,7 @@ export default function AdminProductForm({ productId }: { productId?: string }) 
         <label className="block text-sm font-semibold text-stone-800">Max Order Quantity <span className="font-normal">(0 = সীমাহীন)</span><input type="number" min="0" value={formData.maxOrderQuantity} onChange={(event) => update('maxOrderQuantity', event.target.value)} className={fieldClass} /></label>
         <label className="block text-sm font-semibold text-stone-800">Sorting Rank<input type="number" value={formData.sortingRank} onChange={(event) => update('sortingRank', event.target.value)} className={fieldClass} /></label>
       </section>
-      <section aria-label="পণ্যের ছবি"><div className="mb-2 flex flex-wrap items-end justify-between gap-2"><div><h2 className="text-sm font-bold text-stone-800">পণ্যের ছবি</h2><p className="mt-1 text-xs text-stone-600">{productId ? 'অন্তত ১টি, সর্বোচ্চ ১০টি' : '৪–১০টি ছবি'} · JPG, PNG, WEBP বা GIF · প্রতি ছবি সর্বোচ্চ ৪ MB</p></div><span className="text-xs font-semibold text-stone-600">{totalImages}/10</span></div>
+      <section aria-label="পণ্যের ছবি"><div className="mb-2 flex flex-wrap items-end justify-between gap-2"><div><h2 className="text-sm font-bold text-stone-800">পণ্যের ছবি</h2><p className="mt-1 text-xs text-stone-600">১ থেকে ১০টি ছবি · JPG, PNG, WEBP বা GIF · প্রতি ছবি সর্বোচ্চ ৪ MB</p></div><span className="text-xs font-semibold text-stone-600">{totalImages}/10</span></div>
         <label onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addFiles(event.dataTransfer.files); }} className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-stone-300 bg-[#faf9f5] px-4 py-6 text-center transition hover:border-[#1b3b2b] hover:bg-[#f3f5f1]"><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple disabled={totalImages >= 10} onChange={(event) => { if (event.target.files) addFiles(event.target.files); event.target.value = ''; }} className="sr-only" /><span className="grid size-11 place-items-center rounded-full bg-[#e7ede8] text-[#1b3b2b]"><ImagePlus className="size-5" /></span><span className="mt-3 text-sm font-bold text-stone-800">ছবি বেছে নিন বা এখানে ছেড়ে দিন</span><span className="mt-1 text-xs text-stone-600">একবারে একাধিক ফাইল নির্বাচন করা যাবে</span></label>
         {totalImages > 0 && <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{existingImages.map((url, index) => <li key={url} className="group relative aspect-square overflow-hidden rounded-lg border border-stone-200 bg-stone-100"><img src={url} alt={`পণ্যের ছবি ${index + 1}`} className="size-full object-cover" /><button type="button" onClick={() => setExistingImages((current) => current.filter((_, currentIndex) => currentIndex !== index))} aria-label="ছবি সরান" className="absolute right-2 top-2 grid size-8 place-items-center rounded-md bg-white/95 text-red-700 shadow hover:scale-105"><Trash2 className="size-4" /></button></li>)}{images.map((image, index) => <li key={`${image.file.name}-${index}`} className="group relative aspect-square overflow-hidden rounded-lg border border-stone-200 bg-stone-100"><img src={image.preview} alt={`${image.file.name} preview`} className="size-full object-cover" /><button type="button" onClick={() => removeNewImage(index)} aria-label={`${image.file.name} সরান`} title="ছবি সরান" className="absolute right-2 top-2 grid size-8 place-items-center rounded-md bg-white/95 text-red-700 shadow hover:scale-105"><Trash2 className="size-4" /></button></li>)}</ul>}
       </section>

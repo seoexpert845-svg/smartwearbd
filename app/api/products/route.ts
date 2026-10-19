@@ -68,8 +68,20 @@ export async function POST(req: Request) {
     const stockAlertThreshold = Number(body.stockAlertThreshold ?? 5);
     const maxOrderQuantity = Number(body.maxOrderQuantity ?? 0);
     const sortingRank = Number(body.sortingRank ?? 0);
-    const images = Array.isArray(body.images) ? body.images.filter((value): value is string => typeof value === 'string' && uploadedImagePattern.test(value)) : [];
+    const suppliedImages = Array.isArray(body.images) ? body.images : [];
+    const images = suppliedImages.filter((image): image is string => typeof image === 'string' && uploadedImagePattern.test(image));
     const variants = Array.isArray(body.variants) ? body.variants : [];
+
+    if (!name) return NextResponse.json({ success: false, error: 'পণ্যের নাম প্রয়োজন।' }, { status: 400 });
+    if (!description) return NextResponse.json({ success: false, error: 'পণ্যের বিবরণ প্রয়োজন।' }, { status: 400 });
+    if (!category) return NextResponse.json({ success: false, error: 'পণ্যের ক্যাটাগরি নির্বাচন করুন।' }, { status: 400 });
+    if (!Number.isFinite(regularPrice) || regularPrice <= 0) return NextResponse.json({ success: false, error: 'পণ্যের সঠিক মূল মূল্য দিন।' }, { status: 400 });
+    if (!Number.isFinite(salePrice) || salePrice <= 0) return NextResponse.json({ success: false, error: 'পণ্যের সঠিক বিক্রয় মূল্য দিন।' }, { status: 400 });
+    if (salePrice > regularPrice) return NextResponse.json({ success: false, error: 'বিক্রয় মূল্য মূল দামের বেশি হতে পারবে না।' }, { status: 400 });
+    if (!Array.isArray(body.images) || images.length !== suppliedImages.length || images.length < 1 || images.length > 10) {
+      return NextResponse.json({ success: false, error: 'পণ্যের জন্য ১ থেকে ১০টি বৈধ ছবি নির্বাচন করুন।' }, { status: 400 });
+    }
+    if (!Number.isInteger(stock) || stock < 0) return NextResponse.json({ success: false, error: 'স্টকের পরিমাণ শূন্য বা তার বেশি পূর্ণসংখ্যা হতে হবে।' }, { status: 400 });
 
     const variantsValid = variants.every((variant) => {
       if (!variant || typeof variant !== 'object' || Array.isArray(variant)) return false;
@@ -78,13 +90,12 @@ export async function POST(req: Request) {
         && Number.isInteger(Number(entry.stock)) && Number(entry.stock) >= 0
         && (entry.price === undefined || Number.isFinite(Number(entry.price)) && Number(entry.price) > 0));
     });
-    if (!name || !description || !category || images.length < 4 || images.length > 10 || !Number.isFinite(regularPrice) || regularPrice <= 0 || !Number.isFinite(salePrice) || salePrice <= 0 || salePrice > regularPrice || !Number.isInteger(stock) || stock < 0
-      || !Number.isFinite(buyingPrice) || buyingPrice < 0 || !Number.isInteger(stockAlertThreshold) || stockAlertThreshold < 0
+    if (!Number.isFinite(buyingPrice) || buyingPrice < 0 || !Number.isInteger(stockAlertThreshold) || stockAlertThreshold < 0
       || !Number.isInteger(maxOrderQuantity) || maxOrderQuantity < 0 || !Number.isFinite(sortingRank)
       || body.productType !== undefined && !['single', 'variant'].includes(String(body.productType))
       || body.productType === 'variant' && (!variants.length || !variantsValid)) {
       return NextResponse.json(
-        { success: false, error: 'নাম, বিবরণ, ক্যাটাগরি, ৪-১০টি ছবি, সঠিক মূল্য এবং স্টক দিন। বিক্রয় মূল্য মূল দামের বেশি হতে পারবে না।' },
+        { success: false, error: 'স্টক, ক্রয়মূল্য, ইনভেন্টরি সীমা বা ভ্যারিয়েন্টের তথ্য সঠিক নয়।' },
         { status: 400 }
       );
     }
