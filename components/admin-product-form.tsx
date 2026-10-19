@@ -133,7 +133,17 @@ export default function AdminProductForm({ productId }: { productId?: string }) 
     setSuccess('');
     const imageCount = existingImages.length + images.length;
     if (imageCount < 1 || imageCount > 10) return setError('পণ্যের জন্য ১ থেকে ১০টি ছবি নির্বাচন করুন।');
-    if (Number(formData.salePrice) > Number(formData.regularPrice)) return setError('বিক্রয় মূল্য মূল দামের বেশি হতে পারবে না।');
+    if (!formData.name.trim()) return setError('পণ্যের নাম প্রয়োজন।');
+    if (!formData.description.trim()) return setError('পণ্যের বিবরণ প্রয়োজন।');
+    if (!formData.category.trim()) return setError('পণ্যের ক্যাটাগরি নির্বাচন করুন।');
+    const regularPrice = Number(formData.regularPrice);
+    const salePrice = Number(formData.salePrice);
+    if (!Number.isFinite(regularPrice) || regularPrice <= 0) return setError('পণ্যের সঠিক মূল মূল্য দিন।');
+    if (!Number.isFinite(salePrice) || salePrice <= 0) return setError('পণ্যের সঠিক বিক্রয় মূল্য দিন।');
+    if (salePrice > regularPrice) return setError('বিক্রয় মূল্য মূল দামের বেশি হতে পারবে না।');
+    if (formData.productType === 'single' && (!Number.isInteger(Number(formData.stock)) || Number(formData.stock) < 0)) {
+      return setError('স্টকের পরিমাণ শূন্য বা তার বেশি পূর্ণসংখ্যা হতে হবে।');
+    }
     let variants: unknown;
     try {
       variants = JSON.parse(formData.variants || '[]');

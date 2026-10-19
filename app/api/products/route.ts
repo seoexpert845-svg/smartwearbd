@@ -68,6 +68,7 @@ export async function POST(req: Request) {
     const stockAlertThreshold = Number(body.stockAlertThreshold ?? 5);
     const maxOrderQuantity = Number(body.maxOrderQuantity ?? 0);
     const sortingRank = Number(body.sortingRank ?? 0);
+    const sku = typeof body.sku === 'string' ? body.sku.trim() : '';
     const suppliedImages = Array.isArray(body.images) ? body.images : [];
     const images = suppliedImages.filter((image): image is string => typeof image === 'string' && uploadedImagePattern.test(image));
     const variants = Array.isArray(body.variants) ? body.variants : [];
@@ -99,13 +100,11 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
     await connectDB();
-    const sku = String(body.sku || '').trim();
     if (sku && await Product.exists({ sku })) return NextResponse.json({ success: false, error: 'এই SKU আগে থেকেই ব্যবহৃত হয়েছে।' }, { status: 409 });
     const newProduct = await Product.create({
       name,
-      sku,
+      ...(sku ? { sku } : {}),
       shortDescription: String(body.shortDescription || '').trim(),
       description,
       price: salePrice,
@@ -135,9 +134,10 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true, data: newProduct }, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("Product Creation Error:", error);
     return NextResponse.json(
-      { success: false, error: 'প্রোডাক্ট যোগ করতে ব্যর্থ হয়েছে' },
+      { success: false, error: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
