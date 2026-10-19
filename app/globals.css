@@ -88,10 +88,20 @@ html {
 
 .store-brand {
   color: var(--store-ink);
+  text-decoration: none;
 }
 
 .store-brand > span:first-of-type {
   font-family: Georgia, "Nirmala UI", serif;
+}
+
+.store-brand-wordmark {
+  color: var(--store-ink);
+  font-family: Georgia, "Nirmala UI", serif;
+  font-size: clamp(18px, 5vw, 24px);
+  font-weight: 600;
+  letter-spacing: -0.055em;
+  line-height: 1;
 }
 
 .store-brand-sub {
@@ -329,6 +339,7 @@ html {
 }
 
 .product-card {
+  min-width: 0;
   overflow: hidden;
   border: 1px solid #eee9e0;
   border-radius: 12px;
@@ -353,6 +364,8 @@ html {
 
 .product-card-image > img {
   background: #eee8df;
+  object-fit: cover;
+  object-position: center;
 }
 
 .product-card-image > span {
@@ -415,6 +428,17 @@ html {
 .product-buy-now:hover {
   transform: scale(1.03);
   background: #047857;
+}
+
+@media (max-width: 639px) {
+  .store-product-grid {
+    column-gap: 10px;
+    row-gap: 14px;
+  }
+
+  .product-card {
+    border-radius: 10px;
+  }
 }
 
 .product-add-cart:active,

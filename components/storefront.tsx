@@ -158,16 +158,16 @@ function ProductCard({ product, saved, onToggleWishlist, onAddToCart, onBuyNow }
           {productImages.map((_, index) => <button key={index} type="button" onClick={() => showImage(index)} aria-label={`${index + 1} নম্বর ছবি`} aria-current={imageIndex === index} className={`size-2 rounded-full transition ${imageIndex === index ? 'bg-white' : 'bg-white/55'}`} />)}
         </div>
       </>}
-      {discountPercent > 0 && <span className="product-discount absolute left-3 top-3">{discountPercent}% ছাড়</span>}
-      <button type="button" onClick={() => onToggleWishlist(product._id)} aria-label={saved ? 'ইচ্ছেতালিকা থেকে সরান' : 'ইচ্ছেতালিকায় যোগ করুন'} aria-pressed={saved} className={`product-heart absolute right-3 top-3 grid size-10 place-items-center rounded-full transition duration-200 hover:scale-110 ${saved ? 'is-saved' : ''}`}><Heart className="size-[18px]" fill={saved ? 'currentColor' : 'none'} strokeWidth={1.7} /></button>
+      {discountPercent > 0 && <span className="product-discount absolute left-2.5 top-2.5 sm:left-3 sm:top-3">{discountPercent}% ছাড়</span>}
+      <button type="button" onClick={() => onToggleWishlist(product._id)} aria-label={saved ? 'ইচ্ছেতালিকা থেকে সরান' : 'ইচ্ছেতালিকায় যোগ করুন'} aria-pressed={saved} className={`product-heart absolute right-2.5 top-2.5 grid size-8 place-items-center rounded-full transition duration-200 hover:scale-110 sm:right-3 sm:top-3 sm:size-10 ${saved ? 'is-saved' : ''}`}><Heart className="size-4 sm:size-[18px]" fill={saved ? 'currentColor' : 'none'} strokeWidth={1.7} /></button>
     </div>
-    <div className="product-card-copy flex flex-1 flex-col px-2.5 pb-3 pt-3 sm:px-4 sm:pb-4">
-      {product.category && <p className="product-category mb-1.5 truncate text-[10px] font-semibold uppercase sm:text-[11px]">{product.category}</p>}
-      <h3 className="line-clamp-2 min-h-10 text-[12px] font-semibold leading-5 text-stone-900 sm:text-sm">{product.name}</h3>
-      <p className="product-price mt-1.5 flex flex-wrap items-baseline gap-x-2 text-sm font-bold sm:text-base">{discountPercent > 0 && <del className="text-xs font-medium text-stone-500">{money(getRegularPrice(product))}</del>}<span>{money(getSalePrice(product))}</span></p>
-      <div className="product-actions mt-auto grid grid-cols-2 gap-1.5 pt-3 sm:gap-2 sm:pt-4">
-        <button type="button" onClick={() => runAction('cart')} disabled={actionLoading !== null || unavailable} aria-label={`${product.name} কার্টে যোগ করুন`} title="কার্টে যোগ করুন" className={`product-add-cart inline-flex min-h-10 min-w-0 items-center justify-center gap-1 rounded-lg px-1 text-[9px] font-bold transition hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-11 sm:gap-1.5 sm:px-2 sm:text-[11px] ${actionLoading === 'cart' ? 'animate-pulse' : ''}`}>{actionLoading === 'cart' ? <LoaderCircle className="size-3.5 shrink-0 animate-spin" /> : <ShoppingCart className="size-3.5 shrink-0" />}<span className="truncate">{unavailable ? 'স্টক শেষ' : 'কার্টে যোগ'}</span></button>
-        <button type="button" onClick={() => runAction('buy')} disabled={actionLoading !== null || unavailable} aria-label={`${product.name} অর্ডার করুন`} className={`product-buy-now inline-flex min-h-10 min-w-0 items-center justify-center gap-1 rounded-lg px-1 text-[9px] font-bold transition hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-11 sm:gap-1.5 sm:px-2 sm:text-[11px] ${actionLoading === 'buy' ? 'animate-pulse' : ''}`}>{actionLoading === 'buy' ? <LoaderCircle className="size-3.5 shrink-0 animate-spin" /> : <Zap className="size-3.5 shrink-0" />}<span className="truncate">{unavailable ? 'স্টক শেষ' : 'অর্ডার করুন'}</span></button>
+    <div className="product-card-copy flex min-w-0 flex-1 flex-col px-2 pb-2.5 pt-2.5 sm:px-4 sm:pb-4 sm:pt-3">
+      {product.category && <p className="product-category mb-1 truncate text-[9px] font-semibold uppercase tracking-wide sm:mb-1.5 sm:text-[11px]">{product.category}</p>}
+      <h3 className="line-clamp-2 min-h-9 text-[11px] font-semibold leading-[1.15rem] text-stone-900 sm:min-h-10 sm:text-sm sm:leading-5">{product.name}</h3>
+      <p className="product-price mt-1 flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-[13px] font-bold sm:mt-1.5 sm:gap-x-2 sm:text-base">{discountPercent > 0 && <del className="text-[10px] font-medium text-stone-500 sm:text-xs">{money(getRegularPrice(product))}</del>}<span>{money(getSalePrice(product))}</span></p>
+      <div className="product-actions mt-auto grid grid-cols-2 gap-1 pt-2.5 sm:gap-2 sm:pt-4">
+        <button type="button" onClick={() => runAction('cart')} disabled={actionLoading !== null || unavailable} aria-label={`${product.name} কার্টে যোগ করুন`} title="কার্টে যোগ করুন" className={`product-add-cart inline-flex min-h-9 min-w-0 items-center justify-center gap-0.5 rounded-md px-0.5 text-[8px] font-bold transition hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-11 sm:gap-1.5 sm:rounded-lg sm:px-2 sm:text-[11px] ${actionLoading === 'cart' ? 'animate-pulse' : ''}`}>{actionLoading === 'cart' ? <LoaderCircle className="size-3 shrink-0 animate-spin sm:size-3.5" /> : <ShoppingCart className="size-3 shrink-0 sm:size-3.5" />}<span className="truncate">{unavailable ? 'স্টক শেষ' : 'কার্টে যোগ'}</span></button>
+        <button type="button" onClick={() => runAction('buy')} disabled={actionLoading !== null || unavailable} aria-label={`${product.name} অর্ডার করুন`} className={`product-buy-now inline-flex min-h-9 min-w-0 items-center justify-center gap-0.5 rounded-md px-0.5 text-[8px] font-bold transition hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-11 sm:gap-1.5 sm:rounded-lg sm:px-2 sm:text-[11px] ${actionLoading === 'buy' ? 'animate-pulse' : ''}`}>{actionLoading === 'buy' ? <LoaderCircle className="size-3 shrink-0 animate-spin sm:size-3.5" /> : <Zap className="size-3 shrink-0 sm:size-3.5" />}<span className="truncate">{unavailable ? 'স্টক শেষ' : 'অর্ডার করুন'}</span></button>
       </div>
     </div>
   </article>;
@@ -202,6 +202,7 @@ export default function Storefront() {
   const [couponMessage, setCouponMessage] = useState('');
   const [couponBusy, setCouponBusy] = useState(false);
   const [settings, setSettings] = useState(defaultSettings);
+  const [failedLogoSrc, setFailedLogoSrc] = useState('');
   const [bannerSlide, setBannerSlide] = useState(0);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [productView, setProductView] = useState<'all' | 'wishlist'>('all');
@@ -210,6 +211,7 @@ export default function Storefront() {
   const [guestProfile, setGuestProfile] = useState<GuestProfile | null>(null);
   const [profileDraft, setProfileDraft] = useState<GuestProfile>({ customerName: '', customerPhone: '', district: '', thana: '', customerAddress: '' });
   const [orderReceipts, setOrderReceipts] = useState<OrderReceipt[]>([]);
+  const logoSrc = normalizeImageUrl(settings.logoUrl);
 
   useEffect(() => {
     let mounted = true;
@@ -502,8 +504,8 @@ export default function Storefront() {
       <header className="store-header sticky top-0 z-40">
         <div className="store-header-main relative mx-auto grid min-h-[72px] max-w-7xl grid-cols-[minmax(42px,1fr)_minmax(0,auto)_minmax(42px,1fr)] items-center gap-1 px-3 sm:min-h-[88px] sm:gap-3 sm:px-8">
           <button type="button" onClick={() => setMenuOpen(true)} aria-label="মেনু খুলুন" className="store-icon-button justify-self-start"><Menu className="size-[21px]" strokeWidth={1.6} /></button>
-          <Link href="/" aria-label={`${settings.storeName || 'My Store'} হোম`} className="store-brand flex min-w-0 max-w-[52vw] flex-col items-center text-center sm:max-w-none">
-            {normalizeImageUrl(settings.logoUrl) ? <Image src={normalizeImageUrl(settings.logoUrl)} alt="" width={128} height={36} quality={80} unoptimized={normalizeImageUrl(settings.logoUrl).startsWith('http')} className="mb-1 h-8 w-auto max-w-32 object-contain sm:h-9" /> : <span className="max-w-[48vw] truncate text-[20px] font-semibold leading-none sm:text-[24px]">{settings.storeName || 'My Store'}</span>}
+          <Link href="/" aria-label={`${settings.storeName || 'SmartWearBD'} হোম`} className="store-brand flex min-w-0 max-w-[52vw] flex-col items-center text-center sm:max-w-none">
+            {logoSrc && failedLogoSrc !== logoSrc ? <Image src={logoSrc} alt="" width={160} height={40} quality={80} unoptimized={logoSrc.startsWith('http')} onError={() => setFailedLogoSrc(logoSrc)} className="mb-1 h-8 w-auto max-w-36 object-contain sm:h-9 sm:max-w-40" /> : <span className="store-brand-wordmark max-w-[48vw] truncate">SmartWearBD</span>}
             {settings.slogan.trim() && <span className="store-brand-sub mt-1 max-w-full text-[7px] font-semibold leading-tight tracking-[0.08em] sm:mt-1.5 sm:text-[9px]">{settings.slogan}</span>}
           </Link>
           <div className="flex items-center justify-self-end gap-1 sm:gap-2">
@@ -542,7 +544,7 @@ export default function Storefront() {
 
         <section id="products" className="store-section scroll-mt-36 pb-10 pt-3 sm:pb-14 sm:pt-5">
           <div className="store-section-heading"><div><p className="store-eyebrow">THE NEW EDIT</p><h2>{productView === 'wishlist' ? 'আপনার ইচ্ছেতালিকা' : category === 'সব ক্যাটাগরি' ? 'নতুন কালেকশন' : category}</h2></div><span className="store-product-count">{new Intl.NumberFormat('bn-BD').format(shownProducts.length)}টি পণ্য</span></div>
-          {loading ? <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-5">{[1, 2, 3, 4].map((item) => <div key={item} className="aspect-[3/4] animate-pulse rounded-xl bg-[#eee8df]" />)}</div> : loadError ? <p role="alert" className="store-message">{loadError}</p> : shownProducts.length ? <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-5">{shownProducts.slice(0, 8).map((product) => <ProductCard key={product._id} product={product} saved={wishlist.includes(product._id)} onToggleWishlist={toggleWishlist} onAddToCart={addToCart} onBuyNow={buyNow} />)}</div> : <div className="store-empty-state"><span className="grid size-14 place-items-center rounded-full bg-[#f2eee7] text-2xl text-[#9c8866]">⌕</span><h3 className="mt-4 text-lg font-semibold">এখনো কোনো পণ্য পাওয়া যায়নি</h3><p className="mt-2 text-sm">অন্য ক্যাটাগরি বেছে নিন অথবা পরে আবার দেখুন।</p><button type="button" onClick={() => { setCategory('সব ক্যাটাগরি'); setProductView('all'); setSearch(''); }} className="store-text-link mt-4">সব পণ্য দেখুন <ChevronRight className="size-4" /></button></div>}
+          {loading ? <div className="store-product-grid grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-5">{[1, 2, 3, 4].map((item) => <div key={item} className="aspect-[3/4] animate-pulse rounded-xl bg-[#eee8df]" />)}</div> : loadError ? <p role="alert" className="store-message">{loadError}</p> : shownProducts.length ? <div className="store-product-grid grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-5">{shownProducts.slice(0, 8).map((product) => <ProductCard key={product._id} product={product} saved={wishlist.includes(product._id)} onToggleWishlist={toggleWishlist} onAddToCart={addToCart} onBuyNow={buyNow} />)}</div> : <div className="store-empty-state"><span className="grid size-14 place-items-center rounded-full bg-[#f2eee7] text-2xl text-[#9c8866]">⌕</span><h3 className="mt-4 text-lg font-semibold">এখনো কোনো পণ্য পাওয়া যায়নি</h3><p className="mt-2 text-sm">অন্য ক্যাটাগরি বেছে নিন অথবা পরে আবার দেখুন।</p><button type="button" onClick={() => { setCategory('সব ক্যাটাগরি'); setProductView('all'); setSearch(''); }} className="store-text-link mt-4">সব পণ্য দেখুন <ChevronRight className="size-4" /></button></div>}
         </section>
 
         {productView !== 'wishlist' && popularProducts.length > 0 && <section className="store-popular-section store-section border-t py-9 sm:py-12">
@@ -554,7 +556,7 @@ export default function Storefront() {
           if (!sectionProducts.length) return null;
           return <section key={section._id} className="store-section border-t py-9 sm:py-12">
             <div className="store-section-heading"><div><p className="store-eyebrow">CURATED FOR YOU</p><h2>{section.name}</h2></div><span className="store-section-note">{section.description}</span></div>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-5">{sectionProducts.map((product) => <ProductCard key={`${section._id}-${product._id}`} product={product} saved={wishlist.includes(product._id)} onToggleWishlist={toggleWishlist} onAddToCart={addToCart} onBuyNow={buyNow} />)}</div>
+            <div className="store-product-grid grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-5">{sectionProducts.map((product) => <ProductCard key={`${section._id}-${product._id}`} product={product} saved={wishlist.includes(product._id)} onToggleWishlist={toggleWishlist} onAddToCart={addToCart} onBuyNow={buyNow} />)}</div>
           </section>;
         })}
       </div>
