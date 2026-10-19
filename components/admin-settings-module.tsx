@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ImagePlus, Plus, Save, Settings2, Trash2, X } from 'lucide-react';
 
@@ -141,6 +141,7 @@ export default function AdminSettingsModule() {
   const [settings, setSettings] = useState<StoreSettings>(defaults);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const saveInProgress = useRef(false);
   const [deletingBannerIndex, setDeletingBannerIndex] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
@@ -251,15 +252,22 @@ export default function AdminSettingsModule() {
 
   const saveWebSettings = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (saveInProgress.current) return;
+    saveInProgress.current = true;
     setSaving(true);
     setError('');
     try {
       const nextSettings = { ...settings };
       const { banners: currentBanners, ...settingsPayload } = nextSettings;
-      const banners = [];
-      for (const banner of currentBanners.filter((entry) => entry.file || entry.imageUrl.trim())) {
-        const imageUrl = banner.file ? await uploadAdminImage(banner.file, true) : banner.imageUrl;
-        banners.push({ imageUrl, link: banner.link?.trim() || '' });
+      const banners: { imageUrl: string; link: string }[] = [];
+      const bannersToSave = currentBanners.filter((entry) => entry.file || entry.imageUrl.trim());
+      for (let offset = 0; offset < bannersToSave.length; offset += 3) {
+        const batch = bannersToSave.slice(offset, offset + 3);
+        const uploaded = await Promise.all(batch.map(async (banner) => ({
+          imageUrl: banner.file ? await uploadAdminImage(banner.file, true) : banner.imageUrl,
+          link: banner.link?.trim() || '',
+        })));
+        banners.push(...uploaded);
       }
       const [logoUrl, faviconUrl] = await Promise.all([
         logoFile ? uploadAdminImage(logoFile, true) : Promise.resolve(settingsPayload.logoUrl),
@@ -287,6 +295,7 @@ export default function AdminSettingsModule() {
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'ওয়েব সেটিংস সেভ করা যায়নি।');
     } finally {
+      saveInProgress.current = false;
       setSaving(false);
     }
   };
