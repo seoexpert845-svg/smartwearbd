@@ -162,7 +162,7 @@ export default function AdminProductForm({ productId }: { productId?: string }) 
           const uploadResponse = await fetch('/api/uploads', { method: 'POST', body: uploadForm });
           const uploadResult = await uploadResponse.json();
           if (!uploadResponse.ok || !uploadResult.success || !uploadResult.data?.[0]) {
-            throw new Error(uploadResult.error || 'ছবি আপলোড করা যায়নি।');
+            throw new Error(uploadResult.message || uploadResult.error || 'ছবি আপলোড করা যায়নি।');
           }
           uploadedImages.push(uploadResult.data[0]);
         }

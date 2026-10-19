@@ -50,7 +50,7 @@ export default function ProductReviewsPage() {
         form.append('reviewImage', screenshot);
         const uploadResponse = await fetch('/api/uploads', { method: 'POST', body: form });
         const uploadResult = await uploadResponse.json();
-        if (!uploadResponse.ok || !uploadResult.success) throw new Error(uploadResult.error || 'স্ক্রিনশট আপলোড করা যায়নি।');
+        if (!uploadResponse.ok || !uploadResult.success) throw new Error(uploadResult.message || uploadResult.error || 'স্ক্রিনশট আপলোড করা যায়নি।');
         imageUrl = uploadResult.data[0];
       }
       const selectedProduct = products.find((product) => product._id === productId);

@@ -7,6 +7,11 @@ import { requireAdmin } from '@/lib/auth-api';
 
 type CategoryRouteContext = { params: Promise<{ id: string }> | { id: string } };
 
+function errorResponse(error: unknown, fallback: string) {
+  const message = error instanceof Error ? error.message : String(error) || fallback;
+  return NextResponse.json({ success: false, message, error: message }, { status: 500 });
+}
+
 export async function PATCH(request: Request, context: CategoryRouteContext) {
   const unauthorized = requireAdmin(request);
   if (unauthorized) return unauthorized;
@@ -43,7 +48,8 @@ export async function PATCH(request: Request, context: CategoryRouteContext) {
     }
     return NextResponse.json({ success: true, data: current });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'ক্যাটাগরি আপডেট করা যায়নি।' }, { status: 500 });
+    console.error('Category Update Error:', error);
+    return errorResponse(error, 'ক্যাটাগরি আপডেট করা যায়নি।');
   }
 }
 
@@ -65,6 +71,6 @@ export async function DELETE(_request: Request, context: CategoryRouteContext) {
     await category.deleteOne();
     return NextResponse.json({ success: true, data: { id } });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'ক্যাটাগরি মুছে ফেলা যায়নি।' }, { status: 500 });
+    return errorResponse(error, 'ক্যাটাগরি মুছে ফেলা যায়নি।');
   }
 }

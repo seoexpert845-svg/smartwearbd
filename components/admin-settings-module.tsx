@@ -50,7 +50,7 @@ async function uploadAdminImage(file: File) {
   const response = await fetch('/api/uploads', { method: 'POST', body: formData });
   const result = await response.json();
   if (!response.ok || !result.success || !result.data?.[0]) {
-    throw new Error(result.error || 'ছবি আপলোড করা যায়নি।');
+    throw new Error(result.message || result.error || 'ছবি আপলোড করা যায়নি।');
   }
   return result.data[0] as string;
 }

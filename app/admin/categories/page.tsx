@@ -54,7 +54,7 @@ export default function AdminCategoriesPage() {
         const uploadResponse = await fetch('/api/uploads', { method: 'POST', body: uploadData });
         const uploadResult = await uploadResponse.json();
         if (!uploadResponse.ok || !uploadResult.success || !uploadResult.data?.[0]) {
-          throw new Error(uploadResult.error || 'ক্যাটাগরির ছবি আপলোড করা যায়নি।');
+          throw new Error(uploadResult.message || uploadResult.error || 'ক্যাটাগরির ছবি আপলোড করা যায়নি।');
         }
         categoryImageUrl = uploadResult.data[0];
       }
@@ -64,7 +64,7 @@ export default function AdminCategoriesPage() {
         body: JSON.stringify({ name, description, imageUrl: categoryImageUrl, parentCategory }),
       });
       const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error || 'ক্যাটাগরি সেভ করা যায়নি।');
+      if (!response.ok || !result.success) throw new Error(result.message || result.error || 'ক্যাটাগরি সেভ করা যায়নি।');
       setName('');
       setDescription('');
       setParentCategory('');

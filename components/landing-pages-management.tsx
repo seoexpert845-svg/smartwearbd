@@ -82,7 +82,7 @@ export default function LandingPagesManagement() {
       const body = new FormData(); body.set('settingsImage', file);
       const response = await fetch('/api/uploads', { method: 'POST', body });
       const result = await response.json();
-      if (!response.ok || !result.success || !result.data?.[0]) throw new Error(result.error || 'Media upload failed.');
+      if (!response.ok || !result.success || !result.data?.[0]) throw new Error(result.message || result.error || 'Media upload failed.');
       updateSection(index, { mediaUrl: result.data[0] });
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Media upload failed.'); }
     finally { setBusy(false); }

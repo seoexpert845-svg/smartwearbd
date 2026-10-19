@@ -4,6 +4,11 @@ import Category from '@/models/Category';
 import Product from '@/models/Product';
 import { requireAdmin } from '@/lib/auth-api';
 
+function errorResponse(error: unknown, fallback: string) {
+  const message = error instanceof Error ? error.message : String(error) || fallback;
+  return NextResponse.json({ success: false, message, error: message }, { status: 500 });
+}
+
 export async function GET() {
   try {
     await connectDB();
@@ -18,7 +23,7 @@ export async function GET() {
     const countByName = new Map(counts.map((entry) => [entry._id, entry.count]));
     return NextResponse.json({ success: true, data: categories.map((category) => ({ ...category, productCount: countByName.get(category.name) || 0 })) });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'ক্যাটাগরি লোড করা যায়নি।' }, { status: 500 });
+    return errorResponse(error, 'ক্যাটাগরি লোড করা যায়নি।');
   }
 }
 
@@ -41,6 +46,7 @@ export async function POST(request: Request) {
     const category = await Category.create({ name, parentCategory, description: String(body.description || '').trim(), imageUrl: String(body.imageUrl || '').trim() });
     return NextResponse.json({ success: true, data: category }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'ক্যাটাগরি তৈরি করা যায়নি।' }, { status: 500 });
+    console.error('Category Creation Error:', error);
+    return errorResponse(error, 'ক্যাটাগরি তৈরি করা যায়নি।');
   }
 }
