@@ -4,10 +4,12 @@ import { normalizeImageUrl } from '@/lib/image-url';
 import SiteSetting from '@/models/SiteSetting';
 import { requireAdmin } from '@/lib/auth-api';
 import { getStoreSettings } from '@/lib/site-settings';
+import { ImageUploadValidationError, imageFileFromDataUrl, storeImageFile, validateImageFile } from '@/lib/image-upload';
 
 const DEFAULT_SETTINGS = {
   storeName: 'ঘরবাজার',
   logoUrl: '',
+  faviconUrl: '',
   heroTitle: 'প্রতিদিনের পছন্দ, এবার আরও সাশ্রয়ে',
   heroSubtitle: 'বিশ্বস্ত ব্র্যান্ড, ন্যায্য দাম আর দ্রুত ডেলিভারি—আপনার দরজায় পৌঁছে দিচ্ছি আমরা।',
   heroImageUrl: '',
@@ -24,6 +26,7 @@ export async function GET() {
     const displayFields = settings ? {
       storeName: settings.storeName,
       logoUrl: settings.logoUrl,
+      faviconUrl: settings.faviconUrl,
       heroTitle: settings.heroTitle,
       heroSubtitle: settings.heroSubtitle,
       heroImageUrl: settings.heroImageUrl,
@@ -48,6 +51,7 @@ export async function GET() {
     } : {};
     return NextResponse.json({ success: true, data: { ...DEFAULT_SETTINGS, ...displayFields } });
   } catch (error) {
+    console.error('Store Settings Fetch Error:', error);
     return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'স্টোর সেটিংস লোড করা যায়নি।' }, { status: 500 });
   }
 }
@@ -56,24 +60,38 @@ export async function PATCH(request: Request) {
   const unauthorized = requireAdmin(request);
   if (unauthorized) return unauthorized;
   try {
-    const body = await request.json();
+    const body: unknown = await request.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ success: false, error: 'সেটিংসের তথ্য সঠিক নয়।' }, { status: 400 });
+    }
+    const payload = body as Record<string, unknown>;
     const updates: Record<string, string> = {};
 
     for (const field of TEXT_FIELDS) {
-      const value = field === 'marqueeText' ? body.marqueeText ?? body.announcement_text : body[field];
+      const value = field === 'marqueeText' ? payload.marqueeText ?? payload.announcement_text : payload[field];
       if (value !== undefined) updates[field] = String(value).trim();
     }
     if (updates.marqueeText !== undefined && updates.marqueeText.length > 240) {
       return NextResponse.json({ success: false, error: 'Top Announcement Text সর্বোচ্চ ২৪০ অক্ষরের হতে পারে।' }, { status: 400 });
     }
-    for (const field of ['logoUrl', 'heroImageUrl'] as const) {
-      if (body[field] !== undefined) {
-        const rawUrl = String(body[field]).trim();
-        const isUploadedLogo = field === 'logoUrl' && /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/i.test(rawUrl);
-        if (isUploadedLogo && rawUrl.length > 1_400_000) {
-          return NextResponse.json({ success: false, error: 'লোগো ছবিটি ১ MB-এর মধ্যে রাখুন।' }, { status: 400 });
+    for (const field of ['logoUrl', 'faviconUrl', 'heroImageUrl'] as const) {
+      if (payload[field] !== undefined) {
+        const rawUrl = String(payload[field]).trim();
+        if (rawUrl.startsWith('data:image/')) {
+          try {
+            const imageFile = imageFileFromDataUrl(rawUrl);
+            if (!imageFile) return NextResponse.json({ success: false, error: 'ছবির তথ্য সঠিক নয়।' }, { status: 400 });
+            const validated = await validateImageFile(imageFile);
+            updates[field] = await storeImageFile(validated.bytes, validated.extension);
+          } catch (error) {
+            if (error instanceof ImageUploadValidationError) {
+              return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+            }
+            throw error;
+          }
+          continue;
         }
-        const normalizedUrl = rawUrl ? (isUploadedLogo ? rawUrl : normalizeImageUrl(rawUrl)) : '';
+        const normalizedUrl = rawUrl ? normalizeImageUrl(rawUrl) : '';
         if (rawUrl && !normalizedUrl) return NextResponse.json({ success: false, error: 'লোগো ও ব্যানারের জন্য সঠিক HTTP/HTTPS URL দিন।' }, { status: 400 });
         updates[field] = normalizedUrl;
       }
@@ -91,6 +109,7 @@ export async function PATCH(request: Request) {
     );
     return NextResponse.json({ success: true, data: settings });
   } catch (error) {
+    console.error('Store Settings Update Error:', error);
     return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'স্টোর সেটিংস সেভ করা যায়নি।' }, { status: 500 });
   }
 }

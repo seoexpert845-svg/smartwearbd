@@ -31,6 +31,7 @@ export async function DELETE(request: Request) {
     if (!settings) return NextResponse.json({ success: false, error: 'স্টোর সেটিংস পাওয়া যায়নি।' }, { status: 404 });
     return NextResponse.json({ success: true, data: { banners: settings.banners } });
   } catch (error) {
+    console.error('Admin Banner Delete Error:', error);
     return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'ব্যানার মুছতে ব্যর্থ হয়েছে।' }, { status: 500 });
   }
 }

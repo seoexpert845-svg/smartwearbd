@@ -39,6 +39,7 @@ type StoreSection = { _id: string; name: string; description?: string; sortOrder
 type StoreSettings = {
   storeName: string;
   logoUrl: string;
+  faviconUrl: string;
   heroTitle: string;
   heroSubtitle: string;
   heroImageUrl: string;
@@ -66,6 +67,7 @@ type OrderReceipt = { id: string; totalAmount: number; submittedAt: string };
 const defaultSettings: StoreSettings = {
   storeName: 'My Store',
   logoUrl: '',
+  faviconUrl: '',
   heroTitle: 'প্রতিদিনের পছন্দ, এবার আরও সাশ্রয়ে',
   heroSubtitle: 'বিশ্বস্ত ব্র্যান্ড, ন্যায্য দাম আর দ্রুত ডেলিভারি—আপনার দরজায় পৌঁছে দিচ্ছি আমরা।',
   heroImageUrl: '',
@@ -284,6 +286,18 @@ export default function Storefront() {
 
     return () => { mounted = false; window.clearTimeout(hydrationTimer); };
   }, []);
+
+  useEffect(() => {
+    const faviconUrl = normalizeImageUrl(settings.faviconUrl);
+    if (!faviconUrl) return;
+    let favicon = document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
+    if (!favicon) {
+      favicon = document.createElement('link');
+      favicon.rel = 'icon';
+      document.head.append(favicon);
+    }
+    favicon.href = faviconUrl;
+  }, [settings.faviconUrl]);
 
   useEffect(() => {
     if (cartHydrated) localStorage.setItem('smartwearbd-cart', JSON.stringify(cart));

@@ -5,6 +5,7 @@ const SiteSettingSchema = new Schema(
     key: { type: String, required: true, unique: true, default: 'store' },
     storeName: { type: String, required: true, default: 'ঘরবাজার', trim: true },
     logoUrl: { type: String, default: '' },
+    faviconUrl: { type: String, default: '' },
     heroTitle: { type: String, required: true, default: 'প্রতিদিনের পছন্দ, এবার আরও সাশ্রয়ে', trim: true },
     heroSubtitle: { type: String, default: 'বিশ্বস্ত ব্র্যান্ড, ন্যায্য দাম আর দ্রুত ডেলিভারি—আপনার দরজায় পৌঁছে দিচ্ছি আমরা।', trim: true },
     heroImageUrl: { type: String, default: '' },
@@ -36,7 +37,7 @@ const SiteSettingSchema = new Schema(
 );
 
 const cachedSiteSetting = models.SiteSetting;
-if (cachedSiteSetting && (!cachedSiteSetting.schema.path('orderSettings') || !cachedSiteSetting.schema.path('bannersInitialized') || !cachedSiteSetting.schema.path('courierSettings') || !cachedSiteSetting.schema.path('deliveryZones') || !cachedSiteSetting.schema.path('marqueeText'))) {
+if (cachedSiteSetting && (!cachedSiteSetting.schema.path('orderSettings') || !cachedSiteSetting.schema.path('bannersInitialized') || !cachedSiteSetting.schema.path('courierSettings') || !cachedSiteSetting.schema.path('deliveryZones') || !cachedSiteSetting.schema.path('marqueeText') || !cachedSiteSetting.schema.path('faviconUrl'))) {
   mongoose.deleteModel('SiteSetting');
 }
 const SiteSetting = models.SiteSetting || model('SiteSetting', SiteSettingSchema);

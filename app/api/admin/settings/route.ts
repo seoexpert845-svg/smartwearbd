@@ -9,6 +9,7 @@ import { ImageUploadValidationError, imageFileFromDataUrl, storeImageFile, valid
 const defaults = {
   storeName: 'ঘরবাজার',
   logoUrl: '',
+  faviconUrl: '',
   heroTitle: 'প্রতিদিনের পছন্দ, এবার আরও সাশ্রয়ে',
   heroSubtitle: 'বিশ্বস্ত পণ্য, ন্যায্য দাম আর দ্রুত ডেলিভারি।',
   heroImageUrl: '',
@@ -77,7 +78,9 @@ async function readSettingsPayload(request: Request): Promise<Record<string, unk
   if (!isRecord(settings)) throw new Error('সেটিংসের তথ্য সঠিক নয়।');
 
   const logoImage = formData.get('logoImage');
-  if (logoImage !== null && typeof logoImage !== 'string' && !(logoImage instanceof File)) {
+  const faviconImage = formData.get('faviconImage');
+  if ((logoImage !== null && typeof logoImage !== 'string' && !(logoImage instanceof File)) ||
+      (faviconImage !== null && typeof faviconImage !== 'string' && !(faviconImage instanceof File))) {
     throw new Error('লোগো ছবির ফর্ম ফিল্ড সঠিক নয়।');
   }
 
@@ -110,6 +113,7 @@ async function readSettingsPayload(request: Request): Promise<Record<string, unk
   return {
     ...settings,
     ...(logoImage instanceof File && logoImage.size > 0 ? { _logoImage: logoImage } : {}),
+    ...(faviconImage instanceof File && faviconImage.size > 0 ? { _faviconImage: faviconImage } : {}),
     banners,
   };
 }
@@ -121,12 +125,17 @@ export async function GET(request: Request) {
     await connectDB();
     const current = await getStoreSettings();
     const data = { ...defaults, ...(current || {}) };
-    data.banners = Array.isArray(data.banners) ? data.banners : [];
+    const bannerEntries: unknown[] = Array.isArray(data.banners) ? data.banners : [];
+    data.banners = bannerEntries.filter(isRecord).map((banner) => ({
+        imageUrl: typeof banner.imageUrl === 'string' ? banner.imageUrl : '',
+        link: typeof banner.link === 'string' ? banner.link : '',
+      }));
     data.orderSettings = { ...defaults.orderSettings, ...(isRecord(data.orderSettings) ? data.orderSettings : {}) };
     data.policyPages = isRecord(data.policyPages) ? data.policyPages : {};
     data.pixelSettings = { ...defaults.pixelSettings, ...(isRecord(data.pixelSettings) ? data.pixelSettings : {}) };
     return NextResponse.json({ success: true, data });
   } catch (error) {
+    console.error('Admin Settings Fetch Error:', error);
     return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'সেটিংস লোড করা যায়নি।' }, { status: 500 });
   }
 }
@@ -143,9 +152,10 @@ export async function PATCH(request: Request) {
     }
     const updates: Record<string, unknown> = {};
     let logoImage = body._logoImage instanceof File && body._logoImage.size > 0 ? body._logoImage : undefined;
+    let faviconImage = body._faviconImage instanceof File && body._faviconImage.size > 0 ? body._faviconImage : undefined;
     const announcementText = body.marqueeText ?? body.announcement_text;
     for (const [key, value] of Object.entries(body)) {
-      if (key === '_logoImage' || key === 'announcement_text') continue;
+      if (key === '_logoImage' || key === '_faviconImage' || key === 'announcement_text') continue;
       if (!allowedTopLevel.has(key) || key === 'key' || key === '_id') continue;
       updates[key] = value;
     }
@@ -164,7 +174,7 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ success: false, error: 'সর্বোচ্চ ২০টি বৈধ ব্যানার ইমেজ ও লিংক দিন।' }, { status: 400 });
       }
       const banners: { imageUrl: string; link: string }[] = [];
-      for (const [index, banner] of updates.banners.entries()) {
+      for (const banner of updates.banners) {
         if (!isRecord(banner)) {
           return NextResponse.json({ success: false, error: 'প্রতিটি ব্যানারের ছবি ও redirect link সঠিকভাবে দিন।' }, { status: 400 });
         }
@@ -190,7 +200,7 @@ export async function PATCH(request: Request) {
         }
         if (imageFile) {
           try {
-            filesToStore.push({ index, ...await validateImageFile(imageFile) });
+            filesToStore.push({ index: banners.length, ...await validateImageFile(imageFile) });
           } catch (error) {
             if (error instanceof ImageUploadValidationError) {
               return NextResponse.json({ success: false, error: error.message }, { status: 400 });
@@ -205,11 +215,16 @@ export async function PATCH(request: Request) {
       pendingBanners = banners;
       updates.banners = banners;
     }
-    for (const field of ['logoUrl', 'heroImageUrl'] as const) {
+    for (const field of ['logoUrl', 'faviconUrl', 'heroImageUrl'] as const) {
       if (updates[field] === null) updates[field] = '';
-      if (field === 'logoUrl' && !logoImage && typeof updates.logoUrl === 'string' && updates.logoUrl.startsWith('data:image/')) {
+      const imageValue = updates[field];
+      const hasUploadedFile = field === 'logoUrl' ? Boolean(logoImage) : field === 'faviconUrl' ? Boolean(faviconImage) : false;
+      if ((field === 'logoUrl' || field === 'faviconUrl') && !hasUploadedFile &&
+          typeof imageValue === 'string' && imageValue.startsWith('data:image/')) {
         try {
-          logoImage = imageFileFromDataUrl(updates.logoUrl);
+          const imageFile = imageFileFromDataUrl(imageValue);
+          if (field === 'logoUrl') logoImage = imageFile;
+          else faviconImage = imageFile;
         } catch (error) {
           if (error instanceof ImageUploadValidationError) {
             return NextResponse.json({ success: false, error: error.message }, { status: 400 });
@@ -217,7 +232,7 @@ export async function PATCH(request: Request) {
           throw error;
         }
       }
-      if (field === 'logoUrl' && logoImage) continue;
+      if ((field === 'logoUrl' && logoImage) || (field === 'faviconUrl' && faviconImage)) continue;
       if (updates[field] !== undefined && !validImage(updates[field])) return NextResponse.json({ success: false, error: 'লোগো বা ব্যানারের ইমেজ ঠিকানা সঠিক নয়।' }, { status: 400 });
       if (typeof updates[field] === 'string' && updates[field] && !updates[field].startsWith('/uploads/')) {
         const normalized = normalizeImageUrl(updates[field]);
@@ -276,6 +291,17 @@ export async function PATCH(request: Request) {
         throw error;
       }
     }
+    if (faviconImage) {
+      try {
+        const validated = await validateImageFile(faviconImage);
+        updates.faviconUrl = await storeImageFile(validated.bytes, validated.extension);
+      } catch (error) {
+        if (error instanceof ImageUploadValidationError) {
+          return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+        }
+        throw error;
+      }
+    }
     if (pendingBanners) {
       for (const { index, bytes, extension } of filesToStore) {
         pendingBanners[index]!.imageUrl = await storeImageFile(bytes, extension);
@@ -291,6 +317,7 @@ export async function PATCH(request: Request) {
     ).lean();
     return NextResponse.json({ success: true, data: { ...defaults, ...settings } });
   } catch (error) {
+    console.error('Admin Settings Update Error:', error);
     return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'সেটিংস সেভ করা যায়নি।' }, { status: 500 });
   }
 }
