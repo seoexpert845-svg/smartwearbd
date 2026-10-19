@@ -17,7 +17,7 @@ if (!email || !password || password.length < 8) {
 
 const salt = randomBytes(16).toString('hex');
 const passwordHash = `${salt}:${scryptSync(password, salt, 64).toString('hex')}`;
-const sessionSecret = process.env.SESSION_SECRET || randomBytes(32).toString('base64url');
+const sessionSecret = process.env.SESSION_SECRET || process.env.NEXTAUTH_SECRET || randomBytes(32).toString('base64url');
 const existing = await readFile(envPath, 'utf8');
 const values = new Map([
   ['SESSION_SECRET', sessionSecret],

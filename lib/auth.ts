@@ -7,10 +7,9 @@ export type SessionPayload = { sub: string; role: SessionRole; exp: number };
 type AuthGlobal = typeof globalThis & { __smartwearSessionSecret?: string };
 
 function sessionSecret() {
-  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('SESSION_SECRET must be configured in production.');
-  }
+  const configuredSecret = process.env.SESSION_SECRET || process.env.NEXTAUTH_SECRET;
+  if (configuredSecret) return configuredSecret;
+
   const runtime = globalThis as AuthGlobal;
   runtime.__smartwearSessionSecret ??= randomBytes(32).toString('base64url');
   return runtime.__smartwearSessionSecret;

@@ -18,7 +18,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Authentication Setup
 
-Customer authentication creates signed sessions automatically. Development can generate a process-local fallback, but production requires a stable `SESSION_SECRET` so sessions remain valid across restarts and serverless instances.
+Customer authentication creates signed sessions automatically. If `SESSION_SECRET` and `NEXTAUTH_SECRET` are both unset, the app generates a cryptographically random process-local fallback so auth and admin routes do not crash. Configure a stable secret in production (either variable is accepted) so sessions remain valid across restarts and serverless instances; the process-local fallback is not shared between instances.
 
 To configure or reset the bootstrap administrator, set the credentials in your local PowerShell session and run the seed utility. It stores a salted scrypt hash in `.env.local` and upserts the admin record in MongoDB; it does not store the plaintext password:
 
@@ -72,7 +72,7 @@ Set these in the hosting provider's environment-variable settings:
 | Variable | Purpose |
 | --- | --- |
 | `MONGODB_URI` | MongoDB connection string for the production database/user. |
-| `SESSION_SECRET` | Stable, private random value of at least 32 characters. Keep it unchanged across deploys and instances. |
+| `SESSION_SECRET` or `NEXTAUTH_SECRET` | Stable, private random value of at least 32 characters. Keep it unchanged across deploys and instances. `SESSION_SECRET` takes precedence if both are set. |
 | `COURIER_CREDENTIALS_ENCRYPTION_KEY` | Stable secret of at least 32 characters used to encrypt saved courier credentials. Back it up securely. |
 
 Add optional courier, SMS, fraud-check, and geolocation variables from `.env.example` only when those integrations are enabled. Do not set `ADMIN_PASSWORD` in the live app; it is only a one-time seed input.
@@ -87,7 +87,7 @@ Run the command separately for `SESSION_SECRET` and `COURIER_CREDENTIALS_ENCRYPT
 
 ### Bootstrap the administrator
 
-Create a local, untracked `.env.local` with the production `MONGODB_URI`, the same `SESSION_SECRET` configured on the host, and `ADMIN_EMAIL`/`ADMIN_PASSWORD` for the initial admin. Ensure the environment includes `COURIER_CREDENTIALS_ENCRYPTION_KEY` too. Then run once from the project root:
+Create a local, untracked `.env.local` with the production `MONGODB_URI`, the same `SESSION_SECRET` (or `NEXTAUTH_SECRET`) configured on the host, and `ADMIN_EMAIL`/`ADMIN_PASSWORD` for the initial admin. Ensure the environment includes `COURIER_CREDENTIALS_ENCRYPTION_KEY` too. Then run once from the project root:
 
 ```powershell
 node scripts/seed-admin.mjs
